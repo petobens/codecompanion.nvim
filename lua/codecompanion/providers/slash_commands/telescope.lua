@@ -20,25 +20,21 @@ end
 local action_state = require('telescope.actions.state')
 local actions = require('telescope.actions')
 
-function Telescope:default_action(bufnr)
-    local picker = action_state.get_current_picker(bufnr)
-    local selections = picker:get_multi_selection()
-
-    if vim.tbl_isempty(selections) then
-        selections = { action_state.get_selected_entry() }
-    end
-
-    actions.close(bufnr)
-    vim.iter(selections):each(function(selection)
-        if selection then
-            self.output(selection)
-        end
-    end)
-end
-
 Telescope.actions = require('telescope.actions.mt').transform_mod({
-    default_action = function(bufnr)
-        return Telescope:default_action(bufnr)
+    default_action = function(bufnr, self)
+        local picker = action_state.get_current_picker(bufnr)
+        local selections = picker:get_multi_selection()
+
+        if vim.tbl_isempty(selections) then
+            selections = { action_state.get_selected_entry() }
+        end
+
+        actions.close(bufnr)
+        vim.iter(selections):each(function(selection)
+            if selection then
+                self.output(selection)
+            end
+        end)
     end,
 })
 
@@ -47,9 +43,9 @@ Telescope.actions = require('telescope.actions.mt').transform_mod({
 function Telescope:display()
     return function(_, map)
         actions.select_default:replace(function(bufnr, _)
-            self.default_action(bufnr)
+            self.actions.default_action(bufnr, self)
         end)
-        map('i', '<CR>', actions.select_default)
+        map({ 'i', 'n' }, '<CR>', actions.select_default)
         return true
     end
 end
